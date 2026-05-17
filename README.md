@@ -2,79 +2,158 @@
 
 ## Project Description
 
-This project implements a prototype university record management system.
-The system stores information about students, lecturers, departments,
-programmes, courses, grades, staff, research projects, and publications.
+A university record management system built with FastAPI, SQLite, and plain HTML/Tailwind CSS. The system stores and queries information about students, lecturers, departments, programmes, courses, grades, non-academic staff, research projects, and publications.
 
-The database was implemented using SQLite. A Streamlit interface was built
-to allow users to execute predefined database queries through Python.
+## Technologies
 
-## Technologies Used
-
-- Python
-- SQLite
-- Streamlit
-- pandas
+| Area | Technology |
+|---|---|
+| Database | SQLite |
+| Backend | Python / FastAPI |
+| Frontend | HTML + Tailwind CSS (CDN) + Vanilla JS |
+| Data layer | pandas + sqlite3 |
+| Testing | pytest + httpx |
+| Version control | Git / GitHub |
 
 ## Project Structure
 
-```text
-university_record_system/
-├── app.py
-├── build_database.py
-├── database.py
-├── queries.py
-├── requirements.txt
+```
+CSCK542_Group_Project/
+├── main.py               ← FastAPI app (routes + static file serving)
+├── database.py           ← SQLite connection and query runner
+├── queries.py            ← 10 parameterised query functions
+├── build_database.py     ← Creates and seeds university.db
+├── requirements.txt      ← Runtime dependencies
+├── requirements-test.txt ← Runtime + test dependencies
+├── pytest.ini            ← pytest configuration
 ├── README.md
 ├── database/
-│   ├── schema.sql
-│   ├── seed_data.sql
-│   └── university.db
+│   ├── schema.sql        ← Table definitions (19 tables)
+│   ├── seed_data.sql     ← Sample data (70+ records)
+│   └── university.db     ← SQLite database file
+├── static/
+│   ├── index.html        ← Dashboard
+│   ├── students.html     ← Student management
+│   ├── lecturers.html    ← Lecturer management
+│   ├── courses.html      ← Course browser
+│   ├── departments.html  ← Department browser
+│   ├── research.html     ← Research project browser
+│   └── queries.html      ← Query runner (all 10 queries)
+├── tests/
+│   ├── conftest.py       ← Shared fixtures (in-memory DB, API client)
+│   ├── test_database.py  ← Unit tests for database.py
+│   ├── test_queries.py   ← Unit tests for all 10 query functions
+│   ├── test_api.py       ← Integration tests for every API endpoint
+│   ├── test_schema.py    ← Schema integrity and FK constraint tests
+│   └── test_e2e.py       ← End-to-end tests against the real database
 ├── diagrams/
-│   └── erd.png
-├── meeting_minutes/
-├── report/
-└── video/
+│   └── erd.png           ← Entity relationship diagram
+├── screenshots/          ← Query execution screenshots
+└── report/               ← Project report
+```
 
-How to Run the Project
-1. Create and activate a virtual environment
-python3 -m venv .venv
+## How to Run
+
+### 1. Create and activate a virtual environment
+
+```bash
+python -m venv .venv
+# Windows
+.venv\Scripts\activate
+# macOS / Linux
 source .venv/bin/activate
+```
 
+### 2. Install dependencies
 
-2. Install dependencies
+```bash
 pip install -r requirements.txt
+```
 
+### 3. Build the database
 
-3. Build the database
+```bash
 python build_database.py
+```
 
+### 4. Start the web application
 
-4. Run the Streamlit application
-streamlit run app.py
-Available Queries
+```bash
+python main.py
+```
 
-The application supports the following database queries:
+Then open [http://localhost:8000](http://localhost:8000) in your browser.
 
-Find students enrolled in a specific course taught by a lecturer.
-List final-year students with an average grade above a selected threshold.
-Identify students who have not registered for courses in a semester.
-Retrieve advisor contact information for a selected student.
-Search lecturers by expertise.
-List courses taught by lecturers in a department.
-Find non-academic staff in a department.
-Generate a report on publications by year.
-Database Design Summary
+## Pages
 
-The system uses a relational database design. Core entities include students,
-lecturers, departments, programmes, courses, staff, research projects, and
-publications. Many-to-many relationships are handled through junction tables.
-For example, enrolments links students and courses, while teaching_assignments
-links lecturers and courses. Multi-valued attributes such as grades, lecturer
-expertise areas, qualifications, and publications are stored in separate tables
-to avoid storing multiple values in a single database cell.
+| URL | Description |
+|---|---|
+| `/` | Dashboard: live counts for students, lecturers, courses, departments, programs, research projects |
+| `/students` | Searchable student table with enrolled courses, grades, disciplinary records, and organisations per student |
+| `/lecturers` | Lecturer cards filterable by name, department or expertise, with teaching assignments, qualifications and committees |
+| `/courses` | Course browser filterable by department and level, with enrolments and assigned lecturers |
+| `/departments` | Department overview with programs and non-academic staff |
+| `/research` | Research project browser filterable by title, PI or outcome, with members and publications |
+| `/queries` | Interactive query runner for all 10 database queries |
 
-Notes
+## Available Queries
 
-The project uses dummy data for demonstration purposes. The database can be
-rebuilt at any time by running build_database.py.
+| # | Query | Parameters |
+|---|---|---|
+| 1 | Students enrolled in a course taught by a specific lecturer | course code, lecturer ID, semester |
+| 2 | Final-year students with average grade above a threshold | minimum average (%) |
+| 3 | Students not registered for any course in a semester | semester |
+| 4 | Advisor contact information for a student | student ID |
+| 5 | Lecturers matching an expertise keyword | keyword |
+| 6 | Courses offered by a department | department ID |
+| 7 | Non-academic staff in a department | department ID |
+| 8 | Lecturer publications in a given year | year |
+| 9 | Lecturers ranked by number of student supervisions | *(none)* |
+| 10 | Students assigned to a specific advisor | lecturer ID |
+
+## Database Design
+
+The schema uses 19 tables covering all university entities. Many-to-many relationships are handled through junction tables (`enrolments`, `teaching_assignments`, `research_project_members`). Multi-valued attributes such as expertise areas, qualifications, and publications are stored in separate normalised tables.
+
+See `diagrams/erd.png` for the full entity relationship diagram.
+
+## Testing
+
+The project has a full pytest test suite covering four layers:
+
+| Layer | File | Tests | What is covered |
+|---|---|---|---|
+| Unit - database | `test_database.py` | 8 | `get_connection` and `run_query`: return types, row factory, parameterisation, error handling |
+| Unit - queries | `test_queries.py` | 68 | All 10 named query functions: correct columns, correct rows from seed data, ordering, empty-result edge cases, case-insensitive search |
+| Integration - API | `test_api.py` | 88 | Every FastAPI route and endpoint: status codes, JSON shape, search/filter parameters, 422 validation on bad input |
+| Schema integrity | `test_schema.py` | 54 | All 19 tables exist; primary-key uniqueness; NOT NULL constraints; all foreign-key relationships enforced; AUTOINCREMENT; exact seed row counts |
+| End-to-end | `test_e2e.py` | 38 | Full HTTP → SQLite → JSON chain against the real database: dashboard counts, all 10 queries with expected values, cross-entity data consistency |
+
+**Total: 256 tests, all passing.**
+
+### Running the tests
+
+```bash
+# Install test dependencies
+pip install -r requirements-test.txt
+
+# Run the full suite
+python -m pytest
+
+# Run a specific layer
+python -m pytest tests/test_schema.py    # schema integrity
+python -m pytest tests/test_api.py      # API integration
+python -m pytest tests/test_e2e.py      # end-to-end
+
+# With coverage report
+python -m pytest --cov=. --cov-report=term-missing
+```
+
+All tests use an isolated in-memory SQLite database built from the real schema and seed files, so the production `university.db` is never modified during testing. The end-to-end tests are the only ones that read from the real file, and they do so read-only.
+
+## Notes
+
+- All data is dummy/sample data for demonstration purposes.
+- The database can be rebuilt at any time by running `python build_database.py`.
+- Sample IDs: students `S001`–`S010`, lecturers `L001`–`L005`, departments `D001`–`D004`.
+- Default semester used in queries: `2026S1`.

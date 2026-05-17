@@ -8,7 +8,10 @@ def find_students_by_course_and_lecturer(
     lecturer_id: str,
     semester: str,
 ) -> pd.DataFrame:
-    """Find students enrolled in a course taught by a lecturer."""
+    """Return students enrolled in a course under a specific lecturer."""
+    # Semester is matched on both enrolments and teaching_assignments so that
+    # a lecturer who taught the same course in a different term is not
+    # incorrectly associated with the current cohort.
     query = """
         SELECT
             s.student_id,
@@ -38,7 +41,9 @@ def find_students_by_course_and_lecturer(
 def find_final_year_students_above_grade(
     minimum_average: float,
 ) -> pd.DataFrame:
-    """List final-year students with an average grade above a threshold."""
+    """Return final-year students whose average grade exceeds the threshold."""
+    # year_of_study = duration_years detects final-year status without
+    # hard-coding 3 or 4, so the query works for programs of any length.
     query = """
         SELECT
             s.student_id,
@@ -66,7 +71,8 @@ def find_final_year_students_above_grade(
 
 
 def find_students_without_registration(semester: str) -> pd.DataFrame:
-    """Find students who have not registered for any course."""
+    """Find students who have no enrolments for a given semester."""
+    # LEFT JOIN + IS NULL is cheaper than NOT IN / NOT EXISTS on SQLite
     query = """
         SELECT
             s.student_id,
@@ -87,7 +93,7 @@ def find_students_without_registration(semester: str) -> pd.DataFrame:
 
 
 def get_advisor_contact(student_id: str) -> pd.DataFrame:
-    """Retrieve advisor contact information for a student."""
+    """Retrieve the faculty advisor's contact details for a student."""
     query = """
         SELECT
             s.student_id,
@@ -108,7 +114,8 @@ def get_advisor_contact(student_id: str) -> pd.DataFrame:
 
 
 def search_lecturers_by_expertise(expertise_keyword: str) -> pd.DataFrame:
-    """Search for lecturers with expertise in a research area."""
+    """Search lecturers whose expertise area contains the keyword."""
+    # LOWER on both sides makes the search case-insensitive without a collation
     query = """
         SELECT
             l.lecturer_id,
@@ -129,7 +136,10 @@ def search_lecturers_by_expertise(expertise_keyword: str) -> pd.DataFrame:
 
 
 def list_courses_by_department(department_id: str) -> pd.DataFrame:
-    """List courses taught by lecturers in a specific department."""
+    """Return all courses taught by lecturers in a department."""
+    # DISTINCT is required because a course taught across multiple semesters
+    # produces one row per teaching_assignment; without it, the same
+    # (course, lecturer) pair would appear once per term.
     query = """
         SELECT DISTINCT
             d.department_name,
@@ -153,7 +163,7 @@ def list_courses_by_department(department_id: str) -> pd.DataFrame:
 
 
 def list_staff_by_department(department_id: str) -> pd.DataFrame:
-    """Find non-academic staff employed in a department."""
+    """Find non-academic staff employed in a specific department."""
     query = """
         SELECT
             ns.staff_id,
@@ -172,7 +182,9 @@ def list_staff_by_department(department_id: str) -> pd.DataFrame:
 
 
 def list_publications_by_year(publication_year: int) -> pd.DataFrame:
-    """Generate a report on lecturer publications in a selected year."""
+    """Report all lecturer publications for a given calendar year."""
+    # LEFT JOIN on research_projects so publications not tied to a project
+    # still appear in the results
     query = """
         SELECT
             p.title,
@@ -192,3 +204,45 @@ def list_publications_by_year(publication_year: int) -> pd.DataFrame:
         ORDER BY lecturer_name;
     """
     return run_query(query, (publication_year,))
+
+
+def rank_lecturers_by_supervision() -> pd.DataFrame:
+    """Rank lecturers by the number of student research members supervised."""
+    # rpm.student_id IS NOT NULL filters out lecturer co-members on the same
+    # project; without it, the count would include peer lecturers and inflate
+    # the supervision total.
+    query = """
+        SELECT
+            l.lecturer_id,
+            l.first_name || ' ' || l.last_name AS lecturer_name,
+            d.department_name,
+            COUNT(rpm.member_id) AS student_supervisions
+        FROM lecturers AS l
+        INNER JOIN departments AS d
+            ON l.department_id = d.department_id
+        LEFT JOIN research_project_members AS rpm
+            ON l.lecturer_id = rpm.lecturer_id
+            AND rpm.student_id IS NOT NULL
+        GROUP BY l.lecturer_id, lecturer_name, d.department_name
+        ORDER BY student_supervisions DESC;
+    """
+    return run_query(query)
+
+
+def find_students_by_advisor(lecturer_id: str) -> pd.DataFrame:
+    """Retrieve all students currently assigned to a specific advisor."""
+    query = """
+        SELECT
+            s.student_id,
+            s.first_name || ' ' || s.last_name AS student_name,
+            s.email,
+            p.program_name,
+            s.year_of_study,
+            s.graduation_status
+        FROM students AS s
+        INNER JOIN programs AS p
+            ON s.program_id = p.program_id
+        WHERE s.advisor_lecturer_id = ?
+        ORDER BY student_name;
+    """
+    return run_query(query, (lecturer_id,))

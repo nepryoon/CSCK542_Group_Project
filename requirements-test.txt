@@ -1,0 +1,9 @@
+# Runtime dependencies (also needed by the app itself)
+fastapi
+uvicorn[standard]
+pandas
+
+# Testing
+pytest>=8.0
+httpx          # required by FastAPI TestClient
+pytest-cov     # optional: coverage reporting

@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Students | University RMS</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    * { border-radius: 0 !important; }
+    .r8 { border-radius: 8px !important; }
+    body { font-family: system-ui, -apple-system, sans-serif; }
+    .sidebar { width: 200px; min-height: 100vh; background: #1e293b; flex-shrink: 0; }
+    .nav-link { display: flex; align-items: center; gap: 10px; padding: 8px 14px; color: #94a3b8;
+      font-size: 0.8125rem; font-weight: 500; transition: all 0.15s; border-radius: 8px !important;
+      text-decoration: none; margin: 1px 8px; }
+    .nav-link:hover { background: #334155; color: #f1f5f9; }
+    .nav-link.active { background: #1d4ed8; color: #fff; }
+    .nav-link svg { width: 16px; height: 16px; flex-shrink: 0; }
+
+    .modal-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 50; display: flex; align-items: center; justify-content: center; padding: 24px; }
+    .modal-box { background: white; border-radius: 8px !important; width: 100%; max-width: 600px; max-height: 90vh; display: flex; flex-direction: column; box-shadow: 0 20px 60px rgba(0,0,0,0.25); }
+    .modal-header { background: #1e293b; color: white; padding: 14px 16px; border-radius: 8px 8px 0 0 !important; display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; flex-shrink: 0; }
+    .modal-close { background: none; border: none; color: rgba(255,255,255,0.7); font-size: 1.4rem; line-height: 1; cursor: pointer; padding: 0; }
+    .modal-close:hover { color: white; }
+    .tab-bar { display: flex; border-bottom: 1px solid #e5e7eb; flex-shrink: 0; }
+    .tab-btn { flex: 1; padding: 8px 6px; font-size: 0.72rem; font-weight: 500; color: #6b7280; background: white; border: none; border-bottom: 2px solid transparent; cursor: pointer; transition: all 0.15s; }
+    .tab-btn:hover { color: #1e293b; background: #f1f5f9; }
+    .tab-btn.active { color: #1e293b; border-bottom-color: #1e293b; font-weight: 600; }
+    .modal-body { flex: 1; overflow-y: auto; padding: 16px; font-size: 0.8125rem; }
+    .selected-row { background: #eff6ff !important; }
+    .sec { font-size: 0.65rem; font-weight: 700; color: #9ca3af; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 4px; margin-top: 12px; }
+
+    /* custom select */
+    .custom-select { position: relative; }
+    .custom-select-trigger {
+      display: flex; align-items: center; justify-content: space-between; gap: 8px;
+      border: 1px solid #d1d5db; background: white; padding: 7px 12px;
+      font-size: 0.75rem; color: #374151; cursor: pointer;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.05); border-radius: 8px !important;
+      user-select: none; min-width: 130px; transition: border-color 0.15s, box-shadow 0.15s;
+    }
+    .custom-select-trigger:hover { border-color: #93c5fd; }
+    .custom-select-trigger.open { border-color: #3b82f6; box-shadow: 0 0 0 1.5px rgba(59,130,246,0.25); }
+    .custom-select-trigger svg { flex-shrink: 0; transition: transform 0.15s; color: #9ca3af; }
+    .custom-select-trigger.open svg { transform: rotate(180deg); }
+    .custom-select-dropdown {
+      position: absolute; top: calc(100% + 4px); left: 0; min-width: 100%;
+      background: white; border: 1px solid #e5e7eb;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.10); z-index: 100;
+      border-radius: 8px !important; overflow: hidden; padding: 3px;
+    }
+    .custom-select-option {
+      padding: 6px 10px; font-size: 0.75rem; color: #374151;
+      cursor: pointer; border-radius: 6px !important; transition: background 0.1s;
+    }
+    .custom-select-option:hover { background: #eff6ff; color: #1d4ed8; }
+    .custom-select-option.selected { background: #dbeafe; color: #1d4ed8; font-weight: 600; }
+  </style>
+</head>
+<body class="bg-gray-50 min-h-screen flex">
+
+  <div id="sidebarMount"></div>
+
+  <main class="flex-1 px-6 py-5 overflow-y-auto min-w-0">
+    <div class="flex items-center justify-between mb-4">
+      <div>
+        <h1 class="text-lg font-bold text-gray-800 leading-tight">Students</h1>
+        <p class="text-gray-400 text-xs mt-0.5">Browse, search and inspect student records</p>
+      </div>
+    </div>
+
+    <div class="flex flex-wrap gap-2 mb-3">
+      <input id="searchInput" type="text" placeholder="Search by name, ID or email..."
+        class="flex-1 min-w-[200px] border border-gray-300 px-3 py-2 text-xs shadow-sm focus:outline-none focus:ring-1 focus:ring-blue-500 bg-white r8" />
+      <div class="custom-select" id="statusSelect">
+        <div class="custom-select-trigger" id="statusTrigger" onclick="toggleStatusDropdown()">
+          <span id="statusLabel">All statuses</span>
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="2 4 6 8 10 4"/>
+          </svg>
+        </div>
+        <div class="custom-select-dropdown hidden" id="statusDropdown">
+          <div class="custom-select-option selected" data-value="" onclick="selectStatus(this)">All statuses</div>
+          <div class="custom-select-option" data-value="Not graduated" onclick="selectStatus(this)">In Progress</div>
+          <div class="custom-select-option" data-value="Graduated" onclick="selectStatus(this)">Graduated</div>
+        </div>
+      </div>
+      <button onclick="loadStudents()"
+        class="bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium px-4 py-2 transition shadow-sm r8">Search</button>
+      <button onclick="clearSearch()"
+        class="bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 text-xs font-medium px-3 py-2 transition shadow-sm r8">Clear</button>
+    </div>
+
+    <div class="bg-white border border-gray-200 overflow-hidden shadow-sm r8">
+      <table class="w-full text-xs">
+        <thead class="bg-[#1e293b] text-slate-300 uppercase tracking-wider">
+          <tr>
+            <th class="px-4 py-3 text-left">ID</th>
+            <th class="px-4 py-3 text-left">Name</th>
+            <th class="px-4 py-3 text-left hidden md:table-cell">Email</th>
+            <th class="px-4 py-3 text-left hidden lg:table-cell">Program</th>
+            <th class="px-4 py-3 text-center">Year</th>
+            <th class="px-4 py-3 text-left">Status</th>
+            <th class="px-4 py-3 text-left hidden xl:table-cell">Advisor</th>
+          </tr>
+        </thead>
+        <tbody id="studentBody" class="divide-y divide-gray-100 text-gray-700">
+          <tr><td colspan="7" class="px-4 py-8 text-center text-gray-400">Loading...</td></tr>
+        </tbody>
+      </table>
+      <div id="studentCount" class="px-4 py-2 text-xs text-gray-400 border-t border-gray-100"></div>
+    </div>
+  </main>
+
+  <!-- Modal -->
+  <div id="modal" class="modal-backdrop hidden" onclick="handleBackdropClick(event)">
+    <div class="modal-box">
+      <div class="modal-header">
+        <div>
+          <div class="font-semibold text-sm" id="modalName"></div>
+          <div class="text-blue-200 text-xs font-mono mt-0.5" id="modalId"></div>
+        </div>
+        <button class="modal-close" onclick="closeModal()">&times;</button>
+      </div>
+      <div class="tab-bar">
+        <button class="tab-btn active" onclick="switchTab('courses', this)">Courses</button>
+        <button class="tab-btn" onclick="switchTab('orgs', this)">Organisations</button>
+        <button class="tab-btn" onclick="switchTab('discipline', this)">Disciplinary</button>
+        <button class="tab-btn" onclick="switchTab('info', this)">Info</button>
+      </div>
+      <div id="modalBody" class="modal-body"></div>
+    </div>
+  </div>
+
+  <script>
+    fetch('/static/sidebar.html').then(r => r.text()).then(html => {
+      document.getElementById('sidebarMount').outerHTML = html;
+      document.querySelector('[data-page="students"]')?.classList.add('active');
+    });
+
+    let selectedStudent = null;
+    let currentTab = 'courses';
+
+    function badge(status) {
+      if (status === 'Graduated')
+        return `<span class="inline-flex items-center gap-1 bg-green-100 text-green-700 text-xs font-medium px-2 py-0.5" style="border-radius:8px">
+          <span class="w-1.5 h-1.5 bg-green-500 inline-block" style="border-radius:50%!important"></span>Graduated</span>`;
+      return `<span class="inline-flex items-center gap-1 bg-amber-100 text-amber-700 text-xs font-medium px-2 py-0.5" style="border-radius:8px">
+        <span class="w-1.5 h-1.5 bg-amber-500 inline-block" style="border-radius:50%!important"></span>In Progress</span>`;
+    }
+
+    // custom select state
+    let currentStatus = '';
+
+    function toggleStatusDropdown() {
+      const trigger = document.getElementById('statusTrigger');
+      const dropdown = document.getElementById('statusDropdown');
+      const isOpen = !dropdown.classList.contains('hidden');
+      dropdown.classList.toggle('hidden', isOpen);
+      trigger.classList.toggle('open', !isOpen);
+    }
+
+    function selectStatus(el) {
+      currentStatus = el.dataset.value;
+      document.getElementById('statusLabel').textContent = el.textContent;
+      document.querySelectorAll('.custom-select-option').forEach(o => o.classList.remove('selected'));
+      el.classList.add('selected');
+      document.getElementById('statusDropdown').classList.add('hidden');
+      document.getElementById('statusTrigger').classList.remove('open');
+      loadStudents();
+    }
+
+    // close dropdown when clicking outside
+    document.addEventListener('click', e => {
+      if (!document.getElementById('statusSelect').contains(e.target)) {
+        document.getElementById('statusDropdown').classList.add('hidden');
+        document.getElementById('statusTrigger').classList.remove('open');
+      }
+    });
+
+    function clearSearch() {
+      document.getElementById('searchInput').value = '';
+      currentStatus = '';
+      document.getElementById('statusLabel').textContent = 'All statuses';
+      document.querySelectorAll('.custom-select-option').forEach(o => o.classList.remove('selected'));
+      document.querySelector('.custom-select-option[data-value=""]').classList.add('selected');
+      loadStudents();
+    }
+
+    function loadStudents() {
+      const q = document.getElementById('searchInput').value.trim();
+      const params = new URLSearchParams();
+      if (q) params.set('search', q);
+      if (currentStatus) params.set('status', currentStatus);
+      const url = `/api/students${params.size ? '?' + params : ''}`;
+      document.getElementById('studentBody').innerHTML =
+        `<tr><td colspan="7" class="px-4 py-8 text-center text-gray-400">Loading...</td></tr>`;
+      fetch(url).then(r => r.json()).then(rows => renderTable(rows));
+    }
+
+    function renderTable(rows) {
+      document.getElementById('studentCount').textContent =
+        rows.length ? `${rows.length} student${rows.length !== 1 ? 's' : ''}` : '';
+      if (!rows.length) {
+        document.getElementById('studentBody').innerHTML =
+          `<tr><td colspan="7" class="px-4 py-8 text-center text-gray-400">No students found.</td></tr>`;
+        return;
+      }
+      document.getElementById('studentBody').innerHTML = rows.map(s => `
+        <tr id="row-${s.student_id}"
+          class="hover:bg-blue-50 cursor-pointer transition ${selectedStudent?.student_id === s.student_id ? 'selected-row' : ''}"
+          onclick="openModal(${JSON.stringify(s).replace(/"/g, '&quot;')})">
+          <td class="px-4 py-3 font-mono text-gray-500">${s.student_id}</td>
+          <td class="px-4 py-3 font-medium text-gray-800">${s.name}</td>
+          <td class="px-4 py-3 text-gray-500 hidden md:table-cell">${s.email}</td>
+          <td class="px-4 py-3 text-gray-600 hidden lg:table-cell">${s.program_name}</td>
+          <td class="px-4 py-3 text-center text-gray-600">Yr ${s.year_of_study}</td>
+          <td class="px-4 py-3">${badge(s.graduation_status)}</td>
+          <td class="px-4 py-3 text-gray-500 hidden xl:table-cell">${s.advisor ?? '-'}</td>
+        </tr>
+      `).join('');
+    }
+
+    function openModal(s) {
+      selectedStudent = s;
+      currentTab = 'courses';
+      document.getElementById('modalName').textContent = s.name;
+      document.getElementById('modalId').textContent = s.student_id;
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.tab-btn')[0].classList.add('active');
+      document.getElementById('modal').classList.remove('hidden');
+      loadTab('courses', s.student_id, s);
+    }
+
+    function closeModal() {
+      document.getElementById('modal').classList.add('hidden');
+      selectedStudent = null;
+    }
+
+    function handleBackdropClick(e) {
+      if (e.target === document.getElementById('modal')) closeModal();
+    }
+
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+
+    function switchTab(tab, btn) {
+      currentTab = tab;
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      if (selectedStudent) loadTab(tab, selectedStudent.student_id, selectedStudent);
+    }
+
+    function loadTab(tab, id, student) {
+      const content = document.getElementById('modalBody');
+      content.innerHTML = '<p class="text-gray-400 text-xs">Loading...</p>';
+
+      if (tab === 'info') {
+        content.innerHTML = `
+          <div class="space-y-2.5 text-xs">
+            <div class="flex justify-between"><span class="text-gray-500">Email</span><span class="font-medium text-right">${student.email}</span></div>
+            <div class="flex justify-between"><span class="text-gray-500">Phone</span><span class="font-medium">${student.phone ?? '-'}</span></div>
+            <div class="flex justify-between"><span class="text-gray-500">Program</span><span class="font-medium text-right max-w-[260px]">${student.program_name}</span></div>
+            <div class="flex justify-between"><span class="text-gray-500">Year of Study</span><span class="font-medium">Year ${student.year_of_study}</span></div>
+            <div class="flex justify-between"><span class="text-gray-500">Status</span>${badge(student.graduation_status)}</div>
+            <div class="flex justify-between"><span class="text-gray-500">Advisor</span><span class="font-medium text-right">${student.advisor ?? '-'}</span></div>
+          </div>`;
+        return;
+      }
+
+      if (tab === 'courses') {
+        fetch(`/api/students/${id}/courses`)
+          .then(r => r.json())
+          .then(rows => {
+            if (!rows.length) { content.innerHTML = emptyState('No course enrolments found.'); return; }
+            const graded = rows.filter(r => r.grade !== null);
+            const avg = graded.reduce((a, r) => a + r.grade, 0) / graded.length;
+            content.innerHTML = `
+              ${!isNaN(avg) ? `<div class="mb-3 bg-blue-50 p-2.5 flex items-center gap-3 r8">
+                <div class="text-xl font-bold text-blue-700">${avg.toFixed(1)}%</div>
+                <div class="text-xs text-blue-600">Avg across ${graded.length} graded course${graded.length !== 1 ? 's' : ''}</div>
+              </div>` : ''}
+              <div class="space-y-1.5 text-xs">
+                ${rows.map(r => `
+                  <div class="flex items-center justify-between py-1.5 border-b border-gray-100 last:border-0">
+                    <div>
+                      <div class="font-medium text-gray-800">${r.course_name}</div>
+                      <div class="text-gray-400 font-mono">${r.course_code} &middot; ${r.credits} cr &middot; ${r.semester}</div>
+                    </div>
+                    <div class="text-right shrink-0 ml-3">
+                      ${r.grade !== null
+                        ? `<span class="font-bold ${gradeColour(r.grade)}">${r.grade}%</span>`
+                        : `<span class="text-gray-400">-</span>`}
+                    </div>
+                  </div>`).join('')}
+              </div>`;
+          });
+        return;
+      }
+
+      if (tab === 'orgs') {
+        fetch(`/api/students/${id}/organisations`)
+          .then(r => r.json())
+          .then(rows => {
+            if (!rows.length) { content.innerHTML = emptyState('Not a member of any student organisation.'); return; }
+            content.innerHTML = `<div class="space-y-2 text-xs">
+              ${rows.map(r => `
+                <div class="bg-purple-50 p-2.5 r8">
+                  <div class="font-medium text-purple-800">${r.organisation_name}</div>
+                  <div class="text-purple-600 mt-0.5">Role: ${r.role}</div>
+                  ${r.description ? `<div class="text-gray-500 mt-1">${r.description}</div>` : ''}
+                </div>`).join('')}
+            </div>`;
+          });
+        return;
+      }
+
+      if (tab === 'discipline') {
+        fetch(`/api/students/${id}/disciplinary`)
+          .then(r => r.json())
+          .then(rows => {
+            if (!rows.length) { content.innerHTML = emptyState('No disciplinary records.', 'text-green-600'); return; }
+            content.innerHTML = `<div class="space-y-2 text-xs">
+              ${rows.map(r => `
+                <div class="bg-red-50 border border-red-100 p-2.5 r8">
+                  <div class="flex justify-between items-start mb-1">
+                    <span class="font-mono text-red-400">${r.record_date}</span>
+                    <span class="bg-red-100 text-red-700 px-2 py-0.5" style="border-radius:8px">On record</span>
+                  </div>
+                  <div class="text-gray-700">${r.description}</div>
+                  <div class="text-gray-500 mt-1">Outcome: <span class="font-medium">${r.outcome}</span></div>
+                </div>`).join('')}
+            </div>`;
+          });
+        return;
+      }
+    }
+
+    function gradeColour(g) {
+      if (g === null) return 'text-gray-400';
+      if (g >= 70) return 'text-green-600';
+      if (g >= 50) return 'text-amber-500';
+      return 'text-red-500';
+    }
+
+    function emptyState(msg, cls = 'text-gray-400') {
+      return `<div class="text-center py-6">
+        <div class="text-2xl mb-1.5">&#10003;</div>
+        <p class="text-xs ${cls}">${msg}</p>
+      </div>`;
+    }
+
+    document.getElementById('searchInput').addEventListener('keydown', e => {
+      if (e.key === 'Enter') loadStudents();
+    });
+
+    loadStudents();
+  </script>
+</body>
+</html>

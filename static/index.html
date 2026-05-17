@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dashboard | University RMS</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <style>
+    * { border-radius: 0 !important; }
+    .r8 { border-radius: 8px !important; }
+    body { font-family: system-ui, -apple-system, sans-serif; }
+    .sidebar { width: 200px; min-height: 100vh; background: #1e293b; flex-shrink: 0; }
+    .nav-link { display: flex; align-items: center; gap: 10px; padding: 8px 14px; color: #94a3b8;
+      font-size: 0.8125rem; font-weight: 500; transition: all 0.15s; border-radius: 8px !important;
+      text-decoration: none; margin: 1px 8px; }
+    .nav-link:hover { background: #334155; color: #f1f5f9; }
+    .nav-link.active { background: #1d4ed8; color: #fff; }
+    .nav-link svg { width: 16px; height: 16px; flex-shrink: 0; }
+
+    .stat-card { text-decoration: none; display: flex; align-items: center; gap: 10px;
+      background: white; border: 1px solid #e5e7eb; padding: 10px 14px;
+      border-radius: 8px !important; transition: box-shadow 0.15s, transform 0.15s; }
+    .stat-card:hover { box-shadow: 0 3px 12px rgba(0,0,0,0.08); transform: translateY(-1px); }
+
+    .chart-card { background: white; border: 1px solid #e5e7eb; padding: 14px 16px; border-radius: 8px !important; }
+    .chart-title { font-size: 0.75rem; font-weight: 700; color: #374151; margin-bottom: 2px; }
+    .chart-sub { font-size: 0.68rem; color: #9ca3af; margin-bottom: 10px; }
+    .sec { font-size: 0.65rem; font-weight: 700; color: #9ca3af; text-transform: uppercase;
+      letter-spacing: 0.08em; margin-bottom: 6px; margin-top: 14px; }
+  </style>
+</head>
+<body class="bg-gray-50 min-h-screen flex">
+
+  <div id="sidebarMount"></div>
+
+  <!-- Main -->
+  <main class="flex-1 px-6 py-5 overflow-y-auto min-w-0">
+
+    <!-- Header + stat strip -->
+    <div class="flex items-center justify-between mb-4">
+      <div>
+        <h1 class="text-lg font-bold text-gray-800 leading-tight">Dashboard</h1>
+        <p class="text-gray-400 text-xs mt-0.5">University Record Management System</p>
+      </div>
+      <div id="gradBadge" class="text-xs text-gray-400"></div>
+    </div>
+
+    <!-- Stat cards - single compact row -->
+    <div id="stats" class="grid grid-cols-3 lg:grid-cols-6 gap-2 mb-3">
+      <div class="bg-white border border-gray-100 h-14 animate-pulse r8"></div>
+      <div class="bg-white border border-gray-100 h-14 animate-pulse r8"></div>
+      <div class="bg-white border border-gray-100 h-14 animate-pulse r8"></div>
+      <div class="bg-white border border-gray-100 h-14 animate-pulse r8"></div>
+      <div class="bg-white border border-gray-100 h-14 animate-pulse r8"></div>
+      <div class="bg-white border border-gray-100 h-14 animate-pulse r8"></div>
+    </div>
+
+    <!-- Insight strip -->
+    <div id="insights" class="grid grid-cols-3 gap-2 mb-3">
+      <div class="bg-white border border-gray-100 h-12 animate-pulse r8"></div>
+      <div class="bg-white border border-gray-100 h-12 animate-pulse r8"></div>
+      <div class="bg-white border border-gray-100 h-12 animate-pulse r8"></div>
+    </div>
+
+    <!-- Charts - 3 columns -->
+    <div class="grid grid-cols-3 gap-3 mb-3">
+
+      <div class="chart-card">
+        <div class="chart-title">Graduation Status</div>
+        <div class="chart-sub">Students by status</div>
+        <div class="flex items-center gap-3">
+          <div style="width:90px;height:90px;flex-shrink:0"><canvas id="chartGraduation"></canvas></div>
+          <div id="gradLegend" class="flex-1 space-y-1.5"></div>
+        </div>
+      </div>
+
+      <div class="chart-card">
+        <div class="chart-title">Students by Year</div>
+        <div class="chart-sub">Enrolment per year of study</div>
+        <canvas id="chartYears" height="100"></canvas>
+      </div>
+
+      <div class="chart-card">
+        <div class="chart-title">Research Outcomes</div>
+        <div class="chart-sub">Project status breakdown</div>
+        <div class="flex items-center gap-3">
+          <div style="width:90px;height:90px;flex-shrink:0"><canvas id="chartResearch"></canvas></div>
+          <div id="researchLegend" class="flex-1 space-y-1.5"></div>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="grid grid-cols-3 gap-3 mb-3">
+
+      <div class="chart-card">
+        <div class="chart-title">Students by Program</div>
+        <div class="chart-sub">Enrolment per degree program</div>
+        <canvas id="chartPrograms" height="110"></canvas>
+      </div>
+
+      <div class="chart-card">
+        <div class="chart-title">Lecturer Course Load</div>
+        <div class="chart-sub">Courses assigned per lecturer</div>
+        <canvas id="chartLoad" height="110"></canvas>
+      </div>
+
+      <div class="chart-card">
+        <div class="chart-title">Lecturers by Department</div>
+        <div class="chart-sub">Faculty headcount per department</div>
+        <canvas id="chartDepts" height="110"></canvas>
+      </div>
+
+    </div>
+
+  </main>
+
+  <script>
+    fetch('/static/sidebar.html').then(r => r.text()).then(html => {
+      document.getElementById('sidebarMount').outerHTML = html;
+      document.querySelector('[data-page="dashboard"]')?.classList.add('active');
+    });
+
+    const statConfig = [
+      { key: 'students',          label: 'Students',  href: '/students',  color: '#3b82f6', bg: '#eff6ff', border: '#bfdbfe',
+        icon: `<svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24" width="20" height="20"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>` },
+      { key: 'lecturers',         label: 'Lecturers', href: '/lecturers', color: '#10b981', bg: '#f0fdf4', border: '#a7f3d0',
+        icon: `<svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24" width="20" height="20"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>` },
+      { key: 'courses',           label: 'Courses',   href: '/queries',   color: '#f59e0b', bg: '#fffbeb', border: '#fde68a',
+        icon: `<svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24" width="20" height="20"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>` },
+      { key: 'departments',       label: 'Departments',     href: '/queries',   color: '#6366f1', bg: '#eef2ff', border: '#c7d2fe',
+        icon: `<svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24" width="20" height="20"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>` },
+      { key: 'programs',          label: 'Programs',  href: '/students',  color: '#ec4899', bg: '#fdf2f8', border: '#fbcfe8',
+        icon: `<svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24" width="20" height="20"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>` },
+      { key: 'research_projects', label: 'Research',  href: '/research',  color: '#8b5cf6', bg: '#f5f3ff', border: '#ddd6fe',
+        icon: `<svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24" width="20" height="20"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>` },
+    ];
+
+    Chart.defaults.font.family = 'system-ui, -apple-system, sans-serif';
+    Chart.defaults.font.size = 10;
+    Chart.defaults.color = '#6b7280';
+
+    const COLORS = {
+      blue:'#3b82f6', green:'#10b981', amber:'#f59e0b', purple:'#8b5cf6',
+      pink:'#ec4899', indigo:'#6366f1', teal:'#14b8a6', orange:'#f97316', slate:'#64748b',
+    };
+    const PALETTE = [COLORS.blue, COLORS.green, COLORS.purple, COLORS.pink, COLORS.amber, COLORS.indigo, COLORS.teal, COLORS.orange];
+
+    function donut(id, labels, values, colors) {
+      return new Chart(document.getElementById(id), {
+        type: 'doughnut',
+        data: { labels, datasets: [{ data: values, backgroundColor: colors, borderWidth: 2, borderColor: '#fff', hoverOffset: 3 }] },
+        options: {
+          cutout: '65%',
+          plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => ` ${ctx.label}: ${ctx.raw}` } } },
+          animation: { duration: 500 }
+        }
+      });
+    }
+
+    function barV(id, labels, values, color) {
+      return new Chart(document.getElementById(id), {
+        type: 'bar',
+        data: { labels, datasets: [{ data: values, backgroundColor: color + '28', borderColor: color, borderWidth: 1.5, borderRadius: 4, borderSkipped: false }] },
+        options: {
+          plugins: { legend: { display: false } },
+          scales: {
+            x: { grid: { display: false }, ticks: { font: { size: 9 } } },
+            y: { grid: { color: '#f3f4f6' }, ticks: { stepSize: 1, font: { size: 9 } }, beginAtZero: true }
+          },
+          animation: { duration: 400 }
+        }
+      });
+    }
+
+    function barH(id, labels, values, colors) {
+      return new Chart(document.getElementById(id), {
+        type: 'bar',
+        data: { labels, datasets: [{ data: values, backgroundColor: colors.map(c => c + '28'), borderColor: colors, borderWidth: 1.5, borderRadius: 4, borderSkipped: false }] },
+        options: {
+          indexAxis: 'y',
+          plugins: { legend: { display: false } },
+          scales: {
+            x: { grid: { color: '#f3f4f6' }, ticks: { stepSize: 1, font: { size: 9 } }, beginAtZero: true },
+            y: { grid: { display: false }, ticks: { font: { size: 9 } } }
+          },
+          animation: { duration: 400 }
+        }
+      });
+    }
+
+    function miniLegend(containerId, labels, values, colors) {
+      const total = values.reduce((a, b) => a + b, 0);
+      document.getElementById(containerId).innerHTML = labels.map((l, i) => `
+        <div class="flex items-center justify-between gap-1">
+          <div class="flex items-center gap-1.5 min-w-0">
+            <span class="w-2 h-2 shrink-0 inline-block" style="border-radius:2px!important;background:${colors[i]}"></span>
+            <span class="text-gray-500 truncate" style="font-size:0.65rem">${l}</span>
+          </div>
+          <span class="font-semibold text-gray-700 shrink-0" style="font-size:0.65rem">${values[i]}<span class="text-gray-400 font-normal"> (${Math.round(values[i]/total*100)}%)</span></span>
+        </div>
+      `).join('');
+    }
+
+    Promise.all([
+      fetch('/api/dashboard').then(r => r.json()),
+      fetch('/api/students').then(r => r.json()),
+      fetch('/api/lecturers').then(r => r.json()),
+      fetch('/api/research').then(r => r.json()),
+    ]).then(([dash, students, lecturers, projects]) => {
+
+      // ── Stat cards
+      document.getElementById('stats').innerHTML = statConfig.map(c => `
+        <a href="${c.href}" class="stat-card r8" style="border-color:${c.border};background:${c.bg}">
+          <div class="shrink-0" style="color:${c.color};opacity:0.8">${c.icon}</div>
+          <div>
+            <div class="font-bold leading-tight" style="font-size:1.25rem;color:${c.color}">${dash[c.key]}</div>
+            <div class="font-medium" style="font-size:0.65rem;color:${c.color};opacity:0.7;text-transform:uppercase;letter-spacing:0.05em">${c.label}</div>
+          </div>
+        </a>
+      `).join('');
+
+      // ── Insight strip
+      const graduated = students.filter(s => s.graduation_status === 'Graduated').length;
+      const gradRate = students.length ? Math.round((graduated / students.length) * 100) : 0;
+      const totalLoad = lecturers.reduce((a, l) => a + (l.course_load || 0), 0);
+      const avgLoad = lecturers.length ? (totalLoad / lecturers.length).toFixed(1) : '-';
+      const ongoing = projects.filter(p => p.outcome === 'Ongoing').length;
+
+      document.getElementById('insights').innerHTML = `
+        <div class="bg-white border border-gray-200 px-4 py-2.5 r8 flex items-center gap-3">
+          <span class="text-lg font-bold text-green-600">${gradRate}%</span>
+          <div>
+            <div class="text-xs font-semibold text-gray-700">Graduation Rate</div>
+            <div class="text-gray-400" style="font-size:0.65rem">${graduated} of ${students.length} graduated</div>
+          </div>
+        </div>
+        <div class="bg-white border border-gray-200 px-4 py-2.5 r8 flex items-center gap-3">
+          <span class="text-lg font-bold text-blue-600">${avgLoad}</span>
+          <div>
+            <div class="text-xs font-semibold text-gray-700">Avg Course Load</div>
+            <div class="text-gray-400" style="font-size:0.65rem">courses per lecturer</div>
+          </div>
+        </div>
+        <div class="bg-white border border-gray-200 px-4 py-2.5 r8 flex items-center gap-3">
+          <span class="text-lg font-bold text-purple-600">${ongoing}/${projects.length}</span>
+          <div>
+            <div class="text-xs font-semibold text-gray-700">Ongoing Research</div>
+            <div class="text-gray-400" style="font-size:0.65rem">active projects</div>
+          </div>
+        </div>
+      `;
+
+      // ── Chart 1: Graduation donut
+      const gradCounts = { 'Graduated': 0, 'In Progress': 0 };
+      students.forEach(s => s.graduation_status === 'Graduated' ? gradCounts['Graduated']++ : gradCounts['In Progress']++);
+      const gradLabels = Object.keys(gradCounts), gradVals = Object.values(gradCounts);
+      const gradColors = [COLORS.green, COLORS.amber];
+      donut('chartGraduation', gradLabels, gradVals, gradColors);
+      miniLegend('gradLegend', gradLabels, gradVals, gradColors);
+
+      // ── Chart 2: Students by year
+      const yearCounts = {};
+      students.forEach(s => { const y = `Yr ${s.year_of_study}`; yearCounts[y] = (yearCounts[y] || 0) + 1; });
+      const sortedYears = Object.keys(yearCounts).sort();
+      barV('chartYears', sortedYears, sortedYears.map(y => yearCounts[y]), COLORS.blue);
+
+      // ── Chart 3: Research outcomes donut
+      const outcomeCounts = {};
+      projects.forEach(p => { const k = p.outcome || 'Unknown'; outcomeCounts[k] = (outcomeCounts[k] || 0) + 1; });
+      const resLabels = Object.keys(outcomeCounts), resVals = Object.values(outcomeCounts);
+      const resColors = [COLORS.blue, COLORS.green, COLORS.amber, COLORS.slate].slice(0, resLabels.length);
+      donut('chartResearch', resLabels, resVals, resColors);
+      miniLegend('researchLegend', resLabels, resVals, resColors);
+
+      // ── Chart 4: Students by program
+      const progCounts = {};
+      students.forEach(s => { progCounts[s.program_name] = (progCounts[s.program_name] || 0) + 1; });
+      const progEntries = Object.entries(progCounts).sort((a, b) => b[1] - a[1]);
+      barH('chartPrograms', progEntries.map(([k]) => k.length > 22 ? k.slice(0, 20) + '…' : k), progEntries.map(([,v]) => v), PALETTE.slice(0, progEntries.length));
+
+      // ── Chart 5: Lecturer course load
+      barV('chartLoad', lecturers.map(l => l.name.split(' ').pop()), lecturers.map(l => l.course_load || 0), COLORS.purple);
+
+      // ── Chart 6: Lecturers by department
+      const deptCounts = {};
+      lecturers.forEach(l => { deptCounts[l.department_name] = (deptCounts[l.department_name] || 0) + 1; });
+      const deptEntries = Object.entries(deptCounts).sort((a, b) => b[1] - a[1]);
+      barH('chartDepts', deptEntries.map(([k]) => k), deptEntries.map(([,v]) => v), PALETTE.slice(0, deptEntries.length));
+    });
+  </script>
+</body>
+</html>

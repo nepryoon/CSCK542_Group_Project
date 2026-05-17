@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Queries | University RMS</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    * { border-radius: 0 !important; }
+    .r8 { border-radius: 8px !important; }
+    body { font-family: system-ui, -apple-system, sans-serif; }
+    .sidebar { width: 200px; min-height: 100vh; background: #1e293b; flex-shrink: 0; }
+    .nav-link { display: flex; align-items: center; gap: 10px; padding: 8px 14px; color: #94a3b8;
+      font-size: 0.8125rem; font-weight: 500; transition: all 0.15s; border-radius: 8px !important;
+      text-decoration: none; margin: 1px 8px; }
+    .nav-link:hover { background: #334155; color: #f1f5f9; }
+    .nav-link.active { background: #1d4ed8; color: #fff; }
+    .nav-link svg { width: 16px; height: 16px; flex-shrink: 0; }
+
+    .query-btn {
+      display: flex; align-items: flex-start; flex-direction: column;
+      text-align: left; padding: 8px 12px; border-radius: 8px !important;
+      border: 1px solid #e5e7eb; background: white; color: #374151;
+      font-size: 0.75rem; font-weight: 500; transition: all 0.15s; width: 100%;
+      gap: 1px; cursor: pointer;
+    }
+    .query-btn:hover { border-color: #93c5fd; background: #eff6ff; color: #1d4ed8; }
+    .active-btn { border-color: #3b82f6 !important; background: #eff6ff !important; color: #1d4ed8 !important; font-weight: 600 !important; }
+    .qnum { font-size: 0.6rem; font-weight: 700; color: #93c5fd; font-family: monospace; margin-bottom: 1px; }
+    .active-btn .qnum { color: #3b82f6; }
+    .sec { font-size: 0.65rem; font-weight: 700; color: #9ca3af; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 4px; margin-top: 10px; }
+  </style>
+</head>
+<body class="bg-gray-50 min-h-screen flex">
+
+  <div id="sidebarMount"></div>
+
+  <main class="flex-1 px-6 py-5 overflow-y-auto min-w-0">
+    <div class="flex items-center justify-between mb-4">
+      <div>
+        <h1 class="text-lg font-bold text-gray-800 leading-tight">Database Queries</h1>
+        <p class="text-gray-400 text-xs mt-0.5">Run all 10 parameterised queries against the live database</p>
+      </div>
+    </div>
+
+    <div class="flex gap-4">
+
+      <!-- Query list -->
+      <div class="w-52 shrink-0 flex flex-col gap-1">
+        <div class="sec px-1">Students</div>
+        <button class="query-btn active-btn" onclick="selectQuery(1, this)">
+          <span class="qnum">Q1</span>Students by course &amp; lecturer
+        </button>
+        <button class="query-btn" onclick="selectQuery(2, this)">
+          <span class="qnum">Q2</span>Final-year above grade threshold
+        </button>
+        <button class="query-btn" onclick="selectQuery(3, this)">
+          <span class="qnum">Q3</span>Students without registration
+        </button>
+        <button class="query-btn" onclick="selectQuery(4, this)">
+          <span class="qnum">Q4</span>Advisor contact lookup
+        </button>
+        <button class="query-btn" onclick="selectQuery(10, this)">
+          <span class="qnum">Q10</span>Students by advisor
+        </button>
+
+        <div class="sec px-1">Lecturers</div>
+        <button class="query-btn" onclick="selectQuery(5, this)">
+          <span class="qnum">Q5</span>Lecturers by expertise
+        </button>
+        <button class="query-btn" onclick="selectQuery(9, this)">
+          <span class="qnum">Q9</span>Lecturers by supervision count
+        </button>
+
+        <div class="sec px-1">Courses &amp; Staff</div>
+        <button class="query-btn" onclick="selectQuery(6, this)">
+          <span class="qnum">Q6</span>Courses by department
+        </button>
+        <button class="query-btn" onclick="selectQuery(7, this)">
+          <span class="qnum">Q7</span>Non-academic staff by dept
+        </button>
+
+        <div class="sec px-1">Research</div>
+        <button class="query-btn" onclick="selectQuery(8, this)">
+          <span class="qnum">Q8</span>Publications by year
+        </button>
+      </div>
+
+      <!-- Query panel -->
+      <div class="flex-1 min-w-0">
+        <div class="bg-white border border-gray-200 p-5 min-h-[360px] shadow-sm r8">
+          <div id="queryPanel"></div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    fetch('/static/sidebar.html').then(r => r.text()).then(html => {
+      document.getElementById('sidebarMount').outerHTML = html;
+      document.querySelector('[data-page="queries"]')?.classList.add('active');
+    });
+
+    const queries = {
+      1: {
+        title: 'Students by Course &amp; Lecturer',
+        desc: 'Find all students enrolled in a specific course taught by a given lecturer in a semester.',
+        hint: 'Try: DB101 / L001 / 2026S1',
+        fields: [
+          { id: 'course_code', label: 'Course Code', default: 'DB101', type: 'text', placeholder: 'e.g. DB101' },
+          { id: 'lecturer_id', label: 'Lecturer ID', default: 'L001', type: 'text', placeholder: 'e.g. L001' },
+          { id: 'semester', label: 'Semester', default: '2026S1', type: 'text', placeholder: 'e.g. 2026S1' },
+        ],
+        build: () => {
+          const c = val('course_code'), l = val('lecturer_id'), s = val('semester');
+          return `/api/query/1?course_code=${enc(c)}&lecturer_id=${enc(l)}&semester=${enc(s)}`;
+        }
+      },
+      2: {
+        title: 'Final-Year Students Above Grade Threshold',
+        desc: 'List final-year students whose overall average grade exceeds the given threshold.',
+        hint: 'Default: 70% minimum average',
+        fields: [
+          { id: 'minimum_average', label: 'Minimum Average (%)', default: '70', type: 'number', placeholder: '0-100' },
+        ],
+        build: () => `/api/query/2?minimum_average=${enc(val('minimum_average'))}`
+      },
+      3: {
+        title: 'Students Without Course Registration',
+        desc: 'Find students who have not enrolled in any course for a given semester.',
+        hint: 'Try: 2026S1',
+        fields: [
+          { id: 'semester', label: 'Semester', default: '2026S1', type: 'text', placeholder: 'e.g. 2026S1' },
+        ],
+        build: () => `/api/query/3?semester=${enc(val('semester'))}`
+      },
+      4: {
+        title: 'Advisor Contact Lookup',
+        desc: "Retrieve a student's assigned faculty advisor and their full contact details.",
+        hint: 'Try student IDs: S001 to S010',
+        fields: [
+          { id: 'student_id', label: 'Student ID', default: 'S001', type: 'text', placeholder: 'e.g. S001' },
+        ],
+        build: () => `/api/query/4?student_id=${enc(val('student_id'))}`
+      },
+      5: {
+        title: 'Lecturers by Expertise',
+        desc: 'Search for lecturers who have a matching expertise area (partial match supported).',
+        hint: 'Try: Machine Learning, Databases, Law',
+        fields: [
+          { id: 'keyword', label: 'Expertise Keyword', default: 'Machine Learning', type: 'text', placeholder: 'e.g. Machine Learning' },
+        ],
+        build: () => `/api/query/5?keyword=${enc(val('keyword'))}`
+      },
+      6: {
+        title: 'Courses by Department',
+        desc: 'List all distinct courses offered by lecturers in a department.',
+        hint: 'Department IDs: D001 (CS), D002 (Business), D003 (Law)',
+        fields: [
+          { id: 'department_id', label: 'Department ID', default: 'D001', type: 'text', placeholder: 'e.g. D001' },
+        ],
+        build: () => `/api/query/6?department_id=${enc(val('department_id'))}`
+      },
+      7: {
+        title: 'Non-Academic Staff by Department',
+        desc: 'List all support and administrative staff employed in a given department.',
+        hint: 'Try: D004 (Student Services)',
+        fields: [
+          { id: 'department_id', label: 'Department ID', default: 'D004', type: 'text', placeholder: 'e.g. D004' },
+        ],
+        build: () => `/api/query/7?department_id=${enc(val('department_id'))}`
+      },
+      8: {
+        title: 'Publications by Year',
+        desc: 'List all publications authored by university lecturers in a given year.',
+        hint: 'Try: 2026 or 2025',
+        fields: [
+          { id: 'year', label: 'Publication Year', default: '2026', type: 'number', placeholder: 'e.g. 2026' },
+        ],
+        build: () => `/api/query/8?year=${enc(val('year'))}`
+      },
+      9: {
+        title: 'Lecturers Ranked by Research Supervision',
+        desc: 'Rank all lecturers by how many student researchers they have supervised across all projects.',
+        hint: 'No parameters required',
+        fields: [],
+        build: () => `/api/query/9`
+      },
+      10: {
+        title: 'Students Advised by a Lecturer',
+        desc: 'Retrieve all students whose faculty advisor is a specific lecturer.',
+        hint: 'Lecturer IDs: L001 to L005',
+        fields: [
+          { id: 'lecturer_id', label: 'Lecturer ID', default: 'L001', type: 'text', placeholder: 'e.g. L001' },
+        ],
+        build: () => `/api/query/10?lecturer_id=${enc(val('lecturer_id'))}`
+      },
+    };
+
+    let currentQ = 1;
+
+    function val(id) { return document.getElementById(id)?.value ?? ''; }
+    function enc(v) { return encodeURIComponent(v); }
+
+    function selectQuery(n, btn) {
+      currentQ = n;
+      document.querySelectorAll('.query-btn').forEach(b => b.classList.remove('active-btn'));
+      btn.classList.add('active-btn');
+      renderPanel(n);
+    }
+
+    function renderPanel(n) {
+      const q = queries[n];
+      document.getElementById('queryPanel').innerHTML = `
+        <div class="flex items-start justify-between mb-1">
+          <h2 class="text-sm font-semibold text-gray-800">${q.title}</h2>
+          <span class="bg-blue-100 text-blue-700 text-xs font-bold px-2 py-0.5 font-mono ml-3 shrink-0 r8">Q${n}</span>
+        </div>
+        <p class="text-xs text-gray-500 mb-1">${q.desc}</p>
+        ${q.hint ? `<p class="text-xs text-blue-400 mb-4">${q.hint}</p>` : '<div class="mb-4"></div>'}
+        ${q.fields.length ? `
+          <div class="flex flex-wrap gap-3 mb-4">
+            ${q.fields.map(f => `
+              <div class="flex flex-col gap-1 min-w-[140px]">
+                <label class="text-xs font-semibold text-gray-600 uppercase tracking-wide">${f.label}</label>
+                <input id="${f.id}" type="${f.type}" value="${f.default}" placeholder="${f.placeholder ?? ''}"
+                  class="border border-gray-300 px-3 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 bg-white r8"
+                  onkeydown="if(event.key==='Enter') runQuery()" />
+              </div>
+            `).join('')}
+          </div>` : ''}
+        <button onclick="runQuery()" id="runBtn"
+          class="bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white text-xs font-semibold px-5 py-2 transition shadow-sm mb-5 r8">
+          Run Query
+        </button>
+        <div id="resultArea"></div>
+      `;
+    }
+
+    function runQuery() {
+      const btn = document.getElementById('runBtn');
+      btn.disabled = true;
+      btn.textContent = 'Running...';
+      const url = queries[currentQ].build();
+      document.getElementById('resultArea').innerHTML =
+        `<div class="flex items-center gap-2 text-gray-400 text-xs">
+          <svg class="animate-spin h-3.5 w-3.5" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path>
+          </svg>
+          Querying database...
+        </div>`;
+      fetch(url)
+        .then(r => r.json())
+        .then(rows => {
+          btn.disabled = false;
+          btn.textContent = 'Run Query';
+          renderTable(rows);
+        })
+        .catch(e => {
+          btn.disabled = false;
+          btn.textContent = 'Run Query';
+          document.getElementById('resultArea').innerHTML =
+            `<div class="bg-red-50 border border-red-200 p-3 text-xs text-red-600 r8">Error: ${e.message}</div>`;
+        });
+    }
+
+    function renderTable(rows) {
+      if (!rows.length) {
+        document.getElementById('resultArea').innerHTML =
+          `<div class="bg-gray-50 border border-gray-200 p-6 text-center r8">
+            <div class="text-gray-400 text-2xl mb-1.5">0</div>
+            <p class="text-gray-400 text-xs">No records found for these parameters.</p>
+          </div>`;
+        return;
+      }
+      const cols = Object.keys(rows[0]);
+      document.getElementById('resultArea').innerHTML = `
+        <div class="flex items-center justify-between mb-2">
+          <span class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Results</span>
+          <span class="bg-green-100 text-green-700 text-xs font-semibold px-2 py-0.5 r8">
+            ${rows.length} row${rows.length !== 1 ? 's' : ''}
+          </span>
+        </div>
+        <div class="overflow-x-auto border border-gray-200 r8">
+          <table class="w-full text-xs">
+            <thead class="bg-[#1e293b] text-xs uppercase text-slate-300 tracking-wider">
+              <tr>${cols.map(c => `<th class="px-3 py-2.5 text-left whitespace-nowrap font-semibold">${c.replace(/_/g,' ')}</th>`).join('')}</tr>
+            </thead>
+            <tbody class="divide-y divide-gray-100 text-gray-700">
+              ${rows.map((r, i) =>
+                `<tr class="${i % 2 === 0 ? 'bg-white' : 'bg-gray-50'} hover:bg-blue-50 transition">
+                  ${cols.map(c => `<td class="px-3 py-2.5 whitespace-nowrap">${r[c] ?? '<span class="text-gray-300">-</span>'}</td>`).join('')}
+                </tr>`
+              ).join('')}
+            </tbody>
+          </table>
+        </div>`;
+    }
+
+    renderPanel(1);
+  </script>
+</body>
+</html>
