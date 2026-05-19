@@ -254,7 +254,7 @@ class TestE2EQuery10:
         data = live_client.get("/api/query/10?lecturer_id=L002").json()
         assert len(data) == 3
 
-    def test_unknown_advisor_returns_empty(self, live_client):
+    def test_unknown_advisor_returns_404(self, live_client):
         resp = live_client.get("/api/query/10?lecturer_id=L999")
         assert resp.status_code == 404
 

@@ -123,7 +123,7 @@ class TestStudentsAPI:
             for field in ("course_code", "course_name", "credits", "semester"):
                 assert field in record
 
-    def test_unknown_student_courses_empty(self, api_client):
+    def test_unknown_student_courses_returns_404(self, api_client):
         resp = api_client.get("/api/students/S999/courses")
         assert resp.status_code == 404
 
@@ -333,7 +333,7 @@ class TestCoursesAPI:
         ids = [r["lecturer_id"] for r in data]
         assert "L001" in ids
 
-    def test_unknown_course_enrolments_empty(self, api_client):
+    def test_unknown_course_enrolments_returns_404(self, api_client):
         resp = api_client.get("/api/courses/FAKE999/enrolments")
         assert resp.status_code == 404
 
@@ -385,7 +385,7 @@ class TestDepartmentsAPI:
         ids = [r["staff_id"] for r in data]
         assert set(ids) == {"N001", "N004"}
 
-    def test_unknown_department_programs_empty(self, api_client):
+    def test_unknown_department_programs_returns_404(self, api_client):
         resp = api_client.get("/api/departments/D999/programs")
         assert resp.status_code == 404
 
