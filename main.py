@@ -1,3 +1,4 @@
+import json
 import uvicorn
 from fastapi import FastAPI, HTTPException
 from fastapi.staticfiles import StaticFiles
@@ -590,13 +591,15 @@ def get_departments(search: str = ""):
     df = run_query(
         f"""
         SELECT d.department_id, d.department_name, d.faculty,
-               GROUP_CONCAT(DISTINCT dra.research_area) AS research_areas,
+               (
+                   SELECT COALESCE(json_group_array(dra2.research_area), '[]')
+                   FROM department_research_areas dra2
+                   WHERE dra2.department_id = d.department_id
+               ) AS research_areas,
                COUNT(DISTINCT p.program_id) AS program_count,
                COUNT(DISTINCT l.lecturer_id) AS lecturer_count,
                COUNT(DISTINCT nas.staff_id) AS staff_count
         FROM departments d
-        LEFT JOIN department_research_areas dra
-            ON d.department_id = dra.department_id
         LEFT JOIN programs p ON p.department_id = d.department_id
         LEFT JOIN lecturers l ON l.department_id = d.department_id
         LEFT JOIN non_academic_staff nas ON nas.department_id = d.department_id
@@ -606,7 +609,21 @@ def get_departments(search: str = ""):
         """,
         where_params,
     )
-    return df.to_dict(orient="records")
+    records = df.to_dict(orient="records")
+    for record in records:
+        raw_areas = record.get("research_areas")
+        if isinstance(raw_areas, str):
+            try:
+                parsed = json.loads(raw_areas)
+            except json.JSONDecodeError:
+                parsed = []
+            record["research_areas"] = [
+                area.strip() for area in parsed
+                if isinstance(area, str) and area.strip()
+            ]
+        elif raw_areas is None:
+            record["research_areas"] = []
+    return records
 
 
 @app.get("/api/departments/{department_id}/programs")

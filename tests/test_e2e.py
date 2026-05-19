@@ -294,6 +294,10 @@ class TestE2EDataConsistency:
         for s in students:
             resp = live_client.get(f"/api/students/{s['student_id']}/courses")
             if resp.status_code != 200:
+                assert resp.status_code == 404, (
+                    f"Unexpected status {resp.status_code} for "
+                    f"student {s['student_id']} courses endpoint"
+                )
                 continue
             for c in resp.json():
                 grade = c.get("grade")
