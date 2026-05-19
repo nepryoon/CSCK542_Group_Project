@@ -437,6 +437,38 @@ class TestRankLecturersBySupervision:
         with _patch(db_run_query):
             queries.rank_lecturers_by_supervision()  # must not raise
 
+    def test_L002_supervises_two_students(self, db_run_query):
+        """L002 is PI of R001, which has two student researchers (S004, S009)."""
+        with _patch(db_run_query):
+            df = queries.rank_lecturers_by_supervision()
+        row = df[df["lecturer_id"] == "L002"].iloc[0]
+        assert row["student_supervisions"] == 2
+
+    def test_L003_supervises_one_student(self, db_run_query):
+        """L003 is PI of R003, which has one student researcher (S005)."""
+        with _patch(db_run_query):
+            df = queries.rank_lecturers_by_supervision()
+        row = df[df["lecturer_id"] == "L003"].iloc[0]
+        assert row["student_supervisions"] == 1
+
+    def test_lecturer_not_in_any_project_has_zero(self, db_run_query):
+        """L004 is not a member of any research project; count must be 0."""
+        with _patch(db_run_query):
+            df = queries.rank_lecturers_by_supervision()
+        row = df[df["lecturer_id"] == "L004"].iloc[0]
+        assert row["student_supervisions"] == 0
+
+    def test_total_supervisions_match_seed_data(self, db_run_query):
+        """Sum across all lecturers equals 3 (R001: 2 students via L002,
+        R003: 1 student via L003; R002 has no student researchers).
+        L001 and L005 both belong to R002 but that project has no students,
+        so they contribute 0.  No project has multiple lecturer members AND
+        student members, so there is no double-counting in this seed.
+        """
+        with _patch(db_run_query):
+            df = queries.rank_lecturers_by_supervision()
+        assert df["student_supervisions"].sum() == 3
+
 
 # ---------------------------------------------------------------------------
 # Query 10: find_students_by_advisor
