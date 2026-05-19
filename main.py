@@ -323,9 +323,9 @@ def get_research_projects(search: str = "", outcome: str = ""):
             " OR LOWER(l.first_name || ' ' || l.last_name) LIKE LOWER(?)"
             " OR LOWER(d.department_name) LIKE LOWER(?)"
             " OR EXISTS ("
-            "     SELECT 1 FROM research_project_funding_sources fs"
-            "     WHERE fs.project_id = rp.project_id"
-            "     AND LOWER(fs.funding_source) LIKE LOWER(?)"
+            "     SELECT 1 FROM research_project_funding_sources fs2"
+            "     WHERE fs2.project_id = rp.project_id"
+            "     AND LOWER(fs2.funding_source) LIKE LOWER(?)"
             " ))"
         )
         params += [f"%{search}%"] * 4
