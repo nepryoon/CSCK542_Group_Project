@@ -212,9 +212,16 @@
 
       if (tab === 'info') {
         const d = selectedDept;
-        content.innerHTML = d.research_areas
-          ? `<div class="bg-gray-50 p-3 r8 text-xs text-gray-600">${d.research_areas}</div>`
-          : emptyState('No research areas recorded.');
+        if (!d.research_areas) {
+          content.innerHTML = emptyState('No research areas recorded.');
+          return;
+        }
+        const areas = d.research_areas.split(',').map(a => a.trim()).filter(Boolean);
+        content.innerHTML = `<div class="flex flex-wrap gap-1.5 p-1">
+          ${areas.map(a =>
+            `<span class="bg-purple-50 text-purple-700 px-2.5 py-1 text-xs r8">${a}</span>`
+          ).join('')}
+        </div>`;
       }
     }
 
