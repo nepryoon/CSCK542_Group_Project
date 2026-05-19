@@ -375,7 +375,8 @@ class TestDepartmentsAPI:
 
     def test_d001_has_three_research_areas(self, api_client):
         data = api_client.get("/api/departments").json()
-        d001 = next(r for r in data if r["department_id"] == "D001")
+        d001 = next((r for r in data if r["department_id"] == "D001"), None)
+        assert d001 is not None
         assert len(d001["research_areas"]) == 3
 
     def test_department_programs(self, api_client):

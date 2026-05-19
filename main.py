@@ -618,7 +618,8 @@ def get_departments(search: str = ""):
             except json.JSONDecodeError:
                 parsed = []
             record["research_areas"] = [
-                area for area in parsed if isinstance(area, str) and area
+                area.strip() for area in parsed
+                if isinstance(area, str) and area.strip()
             ]
         elif raw_areas is None:
             record["research_areas"] = []
