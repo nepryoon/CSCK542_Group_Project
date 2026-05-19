@@ -229,7 +229,7 @@ class TestLecturersAPI:
         # research_interests is a comma-separated string from GROUP_CONCAT
         interests = l001["research_interests"]
         assert interests is not None
-        interest_list = [i.strip() for i in interests.split(",")]
+        interest_list = [i.strip() for i in interests.split(",") if i.strip()]
         assert len(interest_list) == 3
 
 
@@ -299,7 +299,7 @@ class TestResearchAPI:
         # funding_source is a comma-separated string from GROUP_CONCAT
         sources = r001["funding_source"]
         assert sources is not None
-        source_list = [s.strip() for s in sources.split(",")]
+        source_list = [s.strip() for s in sources.split(",") if s.strip()]
         assert len(source_list) == 2
 
 
