@@ -207,24 +207,33 @@ def list_publications_by_year(publication_year: int) -> pd.DataFrame:
 
 
 def rank_lecturers_by_supervision() -> pd.DataFrame:
-    """Rank lecturers by the number of student research members supervised."""
-    # rpm.student_id IS NOT NULL filters out lecturer co-members on the same
-    # project; without it, the count would include peer lecturers and inflate
-    # the supervision total.
+    """Rank lecturers by the number of distinct student researchers on shared projects.
+
+    A student counts towards a lecturer's total when both appear as members of
+    the same research project (joined via project_id).  The self-join on
+    research_project_members uses two aliases: lect for the lecturer's own
+    membership rows and stud for student rows on the same project.
+    """
+    # Self-join on research_project_members via project_id: lect finds the
+    # lecturer's project memberships; stud finds student members of those same
+    # projects.  COUNT(DISTINCT) avoids double-counting if a student holds
+    # multiple roles on one project.
     query = """
         SELECT
             l.lecturer_id,
             l.first_name || ' ' || l.last_name AS lecturer_name,
             d.department_name,
-            COUNT(rpm.member_id) AS student_supervisions
+            COUNT(DISTINCT stud.student_id) AS student_supervisions
         FROM lecturers AS l
         INNER JOIN departments AS d
             ON l.department_id = d.department_id
-        LEFT JOIN research_project_members AS rpm
-            ON l.lecturer_id = rpm.lecturer_id
-            AND rpm.student_id IS NOT NULL
+        LEFT JOIN research_project_members AS lect
+            ON lect.lecturer_id = l.lecturer_id
+        LEFT JOIN research_project_members AS stud
+            ON stud.project_id = lect.project_id
+            AND stud.student_id IS NOT NULL
         GROUP BY l.lecturer_id, lecturer_name, d.department_name
-        ORDER BY student_supervisions DESC;
+        ORDER BY student_supervisions DESC, l.lecturer_id;
     """
     return run_query(query)
 
