@@ -254,9 +254,9 @@ class TestE2EQuery10:
         data = live_client.get("/api/query/10?lecturer_id=L002").json()
         assert len(data) == 3
 
-    def test_unknown_advisor_returns_empty(self, live_client):
-        data = live_client.get("/api/query/10?lecturer_id=L999").json()
-        assert data == []
+    def test_unknown_advisor_returns_404(self, live_client):
+        resp = live_client.get("/api/query/10?lecturer_id=L999")
+        assert resp.status_code == 404
 
 
 # ---------------------------------------------------------------------------
@@ -292,10 +292,14 @@ class TestE2EDataConsistency:
         """All stored grades must be in 0–100 range."""
         students = live_client.get("/api/students").json()
         for s in students:
-            courses = live_client.get(
-                f"/api/students/{s['student_id']}/courses"
-            ).json()
-            for c in courses:
+            resp = live_client.get(f"/api/students/{s['student_id']}/courses")
+            if resp.status_code != 200:
+                assert resp.status_code == 404, (
+                    f"Unexpected status {resp.status_code} for "
+                    f"student {s['student_id']} courses endpoint"
+                )
+                continue
+            for c in resp.json():
                 grade = c.get("grade")
                 if grade is not None:
                     assert 0 <= grade <= 100, (

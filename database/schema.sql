@@ -6,6 +6,7 @@ DROP TABLE IF EXISTS student_org_memberships;
 DROP TABLE IF EXISTS student_organisations;
 DROP TABLE IF EXISTS publications;
 DROP TABLE IF EXISTS research_project_members;
+DROP TABLE IF EXISTS research_project_funding_sources;
 DROP TABLE IF EXISTS research_projects;
 DROP TABLE IF EXISTS lecturer_expertise;
 DROP TABLE IF EXISTS lecturer_qualifications;
@@ -16,15 +17,16 @@ DROP TABLE IF EXISTS enrolments;
 DROP TABLE IF EXISTS courses;
 DROP TABLE IF EXISTS non_academic_staff;
 DROP TABLE IF EXISTS students;
+DROP TABLE IF EXISTS lecturer_research_interests;
 DROP TABLE IF EXISTS lecturers;
 DROP TABLE IF EXISTS programs;
+DROP TABLE IF EXISTS department_research_areas;
 DROP TABLE IF EXISTS departments;
 
 CREATE TABLE departments (
     department_id TEXT PRIMARY KEY,
     department_name TEXT NOT NULL,
-    faculty TEXT NOT NULL,
-    research_areas TEXT
+    faculty TEXT NOT NULL
 );
 
 CREATE TABLE programs (
@@ -45,7 +47,6 @@ CREATE TABLE lecturers (
     phone TEXT,
     department_id TEXT NOT NULL,
     course_load INTEGER DEFAULT 0,
-    research_interests TEXT,
     FOREIGN KEY (department_id) REFERENCES departments(department_id)
 );
 
@@ -146,7 +147,6 @@ CREATE TABLE research_projects (
     project_id TEXT PRIMARY KEY,
     project_title TEXT NOT NULL,
     principal_investigator_id TEXT NOT NULL,
-    funding_source TEXT,
     outcome TEXT,
     FOREIGN KEY (principal_investigator_id)
         REFERENCES lecturers(lecturer_id)
@@ -203,4 +203,25 @@ CREATE TABLE committee_memberships (
     role TEXT NOT NULL,
     FOREIGN KEY (lecturer_id) REFERENCES lecturers(lecturer_id),
     FOREIGN KEY (committee_id) REFERENCES committees(committee_id)
+);
+
+CREATE TABLE lecturer_research_interests (
+    lecturer_id TEXT NOT NULL,
+    research_interest TEXT NOT NULL,
+    PRIMARY KEY (lecturer_id, research_interest),
+    FOREIGN KEY (lecturer_id) REFERENCES lecturers(lecturer_id)
+);
+
+CREATE TABLE department_research_areas (
+    department_id TEXT NOT NULL,
+    research_area TEXT NOT NULL,
+    PRIMARY KEY (department_id, research_area),
+    FOREIGN KEY (department_id) REFERENCES departments(department_id)
+);
+
+CREATE TABLE research_project_funding_sources (
+    project_id TEXT NOT NULL,
+    funding_source TEXT NOT NULL,
+    PRIMARY KEY (project_id, funding_source),
+    FOREIGN KEY (project_id) REFERENCES research_projects(project_id)
 );

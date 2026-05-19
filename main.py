@@ -1,3 +1,4 @@
+import json
 import uvicorn
 from fastapi import FastAPI, HTTPException
 from fastapi.staticfiles import StaticFiles
@@ -218,12 +219,16 @@ def get_lecturers(search: str = "", department: str = ""):
         SELECT l.lecturer_id,
                l.first_name || ' ' || l.last_name AS name,
                l.email, l.phone, d.department_name,
-               l.research_interests, l.course_load,
-               GROUP_CONCAT(DISTINCT le.expertise_area) AS expertise
+               l.course_load,
+               GROUP_CONCAT(DISTINCT le.expertise_area) AS expertise,
+               GROUP_CONCAT(DISTINCT lri.research_interest)
+                   AS research_interests
         FROM lecturers l
         JOIN departments d ON l.department_id = d.department_id
         LEFT JOIN lecturer_expertise le
             ON l.lecturer_id = le.lecturer_id
+        LEFT JOIN lecturer_research_interests lri
+            ON l.lecturer_id = lri.lecturer_id
         {where}
         GROUP BY l.lecturer_id
         ORDER BY l.lecturer_id
@@ -318,7 +323,11 @@ def get_research_projects(search: str = "", outcome: str = ""):
             "(LOWER(rp.project_title) LIKE LOWER(?)"
             " OR LOWER(l.first_name || ' ' || l.last_name) LIKE LOWER(?)"
             " OR LOWER(d.department_name) LIKE LOWER(?)"
-            " OR LOWER(rp.funding_source) LIKE LOWER(?))"
+            " OR EXISTS ("
+            "     SELECT 1 FROM research_project_funding_sources fs2"
+            "     WHERE fs2.project_id = rp.project_id"
+            "     AND LOWER(fs2.funding_source) LIKE LOWER(?)"
+            " ))"
         )
         params += [f"%{search}%"] * 4
 
@@ -330,7 +339,8 @@ def get_research_projects(search: str = "", outcome: str = ""):
 
     df = run_query(
         f"""
-        SELECT rp.project_id, rp.project_title, rp.funding_source,
+        SELECT rp.project_id, rp.project_title,
+               GROUP_CONCAT(DISTINCT fs.funding_source) AS funding_source,
                rp.outcome,
                l.first_name || ' ' || l.last_name AS principal_investigator,
                d.department_name,
@@ -350,6 +360,8 @@ def get_research_projects(search: str = "", outcome: str = ""):
         JOIN departments d ON l.department_id = d.department_id
         LEFT JOIN research_project_members rpm
             ON rp.project_id = rpm.project_id
+        LEFT JOIN research_project_funding_sources fs
+            ON rp.project_id = fs.project_id
         {where}
         GROUP BY rp.project_id
         ORDER BY rp.project_id
@@ -578,7 +590,12 @@ def get_departments(search: str = ""):
 
     df = run_query(
         f"""
-        SELECT d.department_id, d.department_name, d.faculty, d.research_areas,
+        SELECT d.department_id, d.department_name, d.faculty,
+               (
+                   SELECT COALESCE(json_group_array(dra2.research_area), '[]')
+                   FROM department_research_areas dra2
+                   WHERE dra2.department_id = d.department_id
+               ) AS research_areas,
                COUNT(DISTINCT p.program_id) AS program_count,
                COUNT(DISTINCT l.lecturer_id) AS lecturer_count,
                COUNT(DISTINCT nas.staff_id) AS staff_count
@@ -592,7 +609,21 @@ def get_departments(search: str = ""):
         """,
         where_params,
     )
-    return df.to_dict(orient="records")
+    records = df.to_dict(orient="records")
+    for record in records:
+        raw_areas = record.get("research_areas")
+        if isinstance(raw_areas, str):
+            try:
+                parsed = json.loads(raw_areas)
+            except json.JSONDecodeError:
+                parsed = []
+            record["research_areas"] = [
+                area.strip() for area in parsed
+                if isinstance(area, str) and area.strip()
+            ]
+        elif raw_areas is None:
+            record["research_areas"] = []
+    return records
 
 
 @app.get("/api/departments/{department_id}/programs")
