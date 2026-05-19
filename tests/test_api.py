@@ -259,7 +259,9 @@ class TestResearchAPI:
 
     def test_search_by_funding_source(self, api_client):
         data = api_client.get("/api/research?search=UKRI").json()
-        assert any(r["project_id"] == "R001" for r in data)
+        r001 = next((r for r in data if r["project_id"] == "R001"), None)
+        assert r001 is not None
+        assert "UKRI" in r001["funding_source"]
 
     def test_filter_by_outcome(self, api_client):
         data = api_client.get("/api/research?outcome=Ongoing").json()
