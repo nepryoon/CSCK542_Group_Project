@@ -123,7 +123,7 @@ class TestStudentsAPI:
             for field in ("course_code", "course_name", "credits", "semester"):
                 assert field in record
 
-    def test_unknown_student_courses_empty(self, api_client):
+    def test_unknown_student_courses_returns_404(self, api_client):
         resp = api_client.get("/api/students/S999/courses")
         assert resp.status_code == 404
 
