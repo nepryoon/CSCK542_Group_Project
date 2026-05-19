@@ -212,11 +212,11 @@
 
       if (tab === 'info') {
         const d = selectedDept;
-        if (!d.research_areas) {
+        const areas = Array.isArray(d.research_areas) ? d.research_areas : [];
+        if (!areas.length) {
           content.innerHTML = emptyState('No research areas recorded.');
           return;
         }
-        const areas = d.research_areas.split(',').map(a => a.trim()).filter(Boolean);
         content.innerHTML = `<div class="flex flex-wrap gap-1.5 p-1">
           ${areas.map(a =>
             `<span class="bg-purple-50 text-purple-700 px-2.5 py-1 text-xs r8">${a}</span>`

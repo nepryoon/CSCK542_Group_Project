@@ -368,6 +368,16 @@ class TestDepartmentsAPI:
         data = api_client.get("/api/departments?search=ZZZZ").json()
         assert data == []
 
+    def test_research_areas_are_returned_as_array(self, api_client):
+        data = api_client.get("/api/departments").json()
+        for record in data:
+            assert isinstance(record["research_areas"], list)
+
+    def test_d001_has_three_research_areas(self, api_client):
+        data = api_client.get("/api/departments").json()
+        d001 = next(r for r in data if r["department_id"] == "D001")
+        assert len(d001["research_areas"]) == 3
+
     def test_department_programs(self, api_client):
         data = api_client.get("/api/departments/D001/programs").json()
         names = [r["program_name"] for r in data]
