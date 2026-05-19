@@ -88,11 +88,11 @@ Then open [http://localhost:8000](http://localhost:8000) in your browser.
 
 | URL | Description |
 |---|---|
-| `/` | Dashboard: live counts for students, lecturers, courses, departments, programs, research projects |
+| `/` | Dashboard: live counts for students, lecturers, courses, departments, programmes, research projects |
 | `/students` | Searchable student table with enrolled courses, grades, disciplinary records, and organisations per student |
 | `/lecturers` | Lecturer cards filterable by name, department or expertise, with teaching assignments, qualifications and committees |
 | `/courses` | Course browser filterable by department and level, with enrolments and assigned lecturers |
-| `/departments` | Department overview with programs and non-academic staff |
+| `/departments` | Department overview with programmes and non-academic staff |
 | `/research` | Research project browser filterable by title, PI or outcome, with members and publications |
 | `/queries` | Interactive query runner for all 10 database queries |
 
@@ -123,11 +123,11 @@ The project has a full pytest test suite covering four layers:
 
 | Layer | File | Tests | What is covered |
 |---|---|---|---|
-| Unit - database | `test_database.py` | 8 | `get_connection` and `run_query`: return types, row factory, parameterisation, error handling |
+| Unit - database | `test_database.py` | 12 | `get_connection` and `run_query`: return types, row factory, parameterisation, error handling |
 | Unit - queries | `test_queries.py` | 68 | All 10 named query functions: correct columns, correct rows from seed data, ordering, empty-result edge cases, case-insensitive search |
 | Integration - API | `test_api.py` | 88 | Every FastAPI route and endpoint: status codes, JSON shape, search/filter parameters, 422 validation on bad input |
-| Schema integrity | `test_schema.py` | 54 | All 19 tables exist; primary-key uniqueness; NOT NULL constraints; all foreign-key relationships enforced; AUTOINCREMENT; exact seed row counts |
-| End-to-end | `test_e2e.py` | 38 | Full HTTP → SQLite → JSON chain against the real database: dashboard counts, all 10 queries with expected values, cross-entity data consistency |
+| Schema integrity | `test_schema.py` | 48 | All 19 tables exist; primary-key uniqueness; NOT NULL constraints; all foreign-key relationships enforced; AUTOINCREMENT; exact seed row counts |
+| End-to-end | `test_e2e.py` | 40 | Full HTTP → SQLite → JSON chain against the real database: dashboard counts, all 10 queries with expected values, cross-entity data consistency |
 
 **Total: 256 tests, all passing.**
 
