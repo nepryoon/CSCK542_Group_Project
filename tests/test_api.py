@@ -222,6 +222,16 @@ class TestLecturersAPI:
         data = api_client.get("/api/lecturers/L999/students").json()
         assert data == []
 
+    def test_l001_has_three_research_interests(self, api_client):
+        data = api_client.get("/api/lecturers").json()
+        l001 = next((r for r in data if r["lecturer_id"] == "L001"), None)
+        assert l001 is not None
+        # research_interests is a comma-separated string from GROUP_CONCAT
+        interests = l001["research_interests"]
+        assert interests is not None
+        interest_list = [i.strip() for i in interests.split(",")]
+        assert len(interest_list) == 3
+
 
 # ---------------------------------------------------------------------------
 # Research API
@@ -245,6 +255,10 @@ class TestResearchAPI:
 
     def test_search_by_pi_name(self, api_client):
         data = api_client.get("/api/research?search=clark").json()
+        assert any(r["project_id"] == "R001" for r in data)
+
+    def test_search_by_funding_source(self, api_client):
+        data = api_client.get("/api/research?search=UKRI").json()
         assert any(r["project_id"] == "R001" for r in data)
 
     def test_filter_by_outcome(self, api_client):
@@ -275,6 +289,16 @@ class TestResearchAPI:
         for record in data:
             for field in ("title", "publication_year", "publication_type", "author"):
                 assert field in record
+
+    def test_r001_has_two_funding_sources(self, api_client):
+        data = api_client.get("/api/research").json()
+        r001 = next((r for r in data if r["project_id"] == "R001"), None)
+        assert r001 is not None
+        # funding_source is a comma-separated string from GROUP_CONCAT
+        sources = r001["funding_source"]
+        assert sources is not None
+        source_list = [s.strip() for s in sources.split(",")]
+        assert len(source_list) == 2
 
 
 # ---------------------------------------------------------------------------
