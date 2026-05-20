@@ -1,12 +1,8 @@
 INSERT INTO departments VALUES
-('D001', 'Computer Science', 'Faculty of Science and Engineering',
- 'Artificial intelligence, databases, cybersecurity'),
-('D002', 'Business Analytics', 'Faculty of Business',
- 'Data analytics, decision science, digital business'),
-('D003', 'Law', 'Faculty of Humanities and Social Sciences',
- 'Technology law, commercial law, regulation'),
-('D004', 'Student Services', 'Professional Services',
- 'Student administration and welfare');
+('D001', 'Computer Science', 'Faculty of Science and Engineering'),
+('D002', 'Business Analytics', 'Faculty of Business'),
+('D003', 'Law', 'Faculty of Humanities and Social Sciences'),
+('D004', 'Student Services', 'Professional Services');
 
 INSERT INTO programs VALUES
 ('P001', 'BSc Computer Science', 'Bachelor of Science', 3, 'D001',
@@ -20,15 +16,15 @@ INSERT INTO programs VALUES
 
 INSERT INTO lecturers VALUES
 ('L001', 'John', 'Smith', 'john.smith@university.edu', '0207000001',
- 'D001', 3, 'Databases and distributed systems'),
+ 'D001', 3),
 ('L002', 'Emily', 'Clark', 'emily.clark@university.edu', '0207000002',
- 'D001', 2, 'Artificial intelligence and machine learning'),
+ 'D001', 2),
 ('L003', 'Michael', 'Brown', 'michael.brown@university.edu',
- '0207000003', 'D002', 2, 'Business analytics and forecasting'),
+ '0207000003', 'D002', 2),
 ('L004', 'Sarah', 'Wilson', 'sarah.wilson@university.edu',
- '0207000004', 'D003', 1, 'Technology law and data protection'),
+ '0207000004', 'D003', 1),
 ('L005', 'David', 'Nguyen', 'david.nguyen@university.edu',
- '0207000005', 'D001', 2, 'Cybersecurity and cloud computing');
+ '0207000005', 'D001', 2);
 
 INSERT INTO students VALUES
 ('S001', 'Alice', 'Taylor', '2003-05-12',
@@ -159,13 +155,12 @@ INSERT INTO lecturer_expertise
 ('L005', 'Cybersecurity'),
 ('L005', 'Cloud Computing');
 
-INSERT INTO research_projects VALUES
-('R001', 'AI Supported Student Analytics', 'L002',
- 'UKRI', 'Prototype completed'),
-('R002', 'Secure Cloud Database Systems', 'L005',
- 'Industry Partner', 'Ongoing'),
+INSERT INTO research_projects
+(project_id, project_title, principal_investigator_id, outcome) VALUES
+('R001', 'AI Supported Student Analytics', 'L002', 'Prototype completed'),
+('R002', 'Secure Cloud Database Systems', 'L005', 'Ongoing'),
 ('R003', 'Business Forecasting for Universities', 'L003',
- 'Internal Grant', 'Final report submitted');
+ 'Final report submitted');
 
 INSERT INTO research_project_members
 (project_id, lecturer_id, student_id, role) VALUES
@@ -214,3 +209,37 @@ INSERT INTO committee_memberships
 ('L001', 'C001', 'Member'),
 ('L002', 'C002', 'Member'),
 ('L004', 'C002', 'Chair');
+
+INSERT INTO lecturer_research_interests
+(lecturer_id, research_interest) VALUES
+('L001', 'Databases and distributed systems'),
+('L001', 'Cloud-native database architectures'),
+('L001', 'Data engineering and pipeline optimisation'),
+('L002', 'Artificial intelligence and machine learning'),
+('L002', 'Learning analytics and educational data mining'),
+('L003', 'Business analytics and forecasting'),
+('L004', 'Technology law and data protection'),
+('L005', 'Cybersecurity and cloud computing');
+
+INSERT INTO department_research_areas
+(department_id, research_area) VALUES
+('D001', 'Artificial intelligence'),
+('D001', 'Databases'),
+('D001', 'Cybersecurity'),
+('D002', 'Data analytics'),
+('D002', 'Decision science'),
+('D002', 'Digital business'),
+('D003', 'Technology law'),
+('D003', 'Commercial law'),
+('D003', 'Regulation'),
+('D004', 'Student administration and welfare'),
+('D004', 'Student experience and wellbeing'),
+('D004', 'Access and widening participation');
+
+INSERT INTO research_project_funding_sources
+(project_id, funding_source) VALUES
+('R001', 'UKRI'),
+('R001', 'EU Horizon Europe'),
+('R002', 'Industry Partner'),
+('R002', 'UKRI EPSRC'),
+('R003', 'Internal Grant');

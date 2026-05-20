@@ -292,11 +292,12 @@ class TestE2EDataConsistency:
         """All stored grades must be in 0–100 range."""
         students = live_client.get("/api/students").json()
         for s in students:
-            resp = live_client.get(
-                f"/api/students/{s['student_id']}/courses"
-            )
-            assert resp.status_code in (200, 404)
-            if resp.status_code == 404:
+            resp = live_client.get(f"/api/students/{s['student_id']}/courses")
+            if resp.status_code != 200:
+                assert resp.status_code == 404, (
+                    f"Unexpected status {resp.status_code} for "
+                    f"student {s['student_id']} courses endpoint"
+                )
                 continue
             for c in resp.json():
                 grade = c.get("grade")

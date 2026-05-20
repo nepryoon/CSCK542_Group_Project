@@ -39,6 +39,8 @@ EXPECTED_TABLES = [
     "research_projects", "research_project_members",
     "publications", "student_organisations",
     "student_org_memberships", "committees", "committee_memberships",
+    "lecturer_research_interests", "department_research_areas",
+    "research_project_funding_sources",
 ]
 
 
@@ -60,14 +62,14 @@ class TestPrimaryKeys:
     def test_department_pk_unique(self, isolated_db):
         _must_fail(
             isolated_db,
-            "INSERT INTO departments VALUES ('D001','Dup','Faculty','Areas')",
+            "INSERT INTO departments VALUES ('D001','Dup','Faculty')",
         )
 
     def test_lecturer_pk_unique(self, isolated_db):
         _must_fail(
             isolated_db,
             "INSERT INTO lecturers VALUES "
-            "('L001','X','Y','x@y.com','000','D001',1,'None')",
+            "('L001','X','Y','x@y.com','000','D001',1)",
         )
 
     def test_student_pk_unique(self, isolated_db):
@@ -100,27 +102,27 @@ class TestNotNullConstraints:
     def test_department_name_not_null(self, isolated_db):
         _must_fail(
             isolated_db,
-            "INSERT INTO departments VALUES ('D099', NULL, 'Faculty', 'Areas')",
+            "INSERT INTO departments VALUES ('D099', NULL, 'Faculty')",
         )
 
     def test_department_faculty_not_null(self, isolated_db):
         _must_fail(
             isolated_db,
-            "INSERT INTO departments VALUES ('D099', 'Name', NULL, 'Areas')",
+            "INSERT INTO departments VALUES ('D099', 'Name', NULL)",
         )
 
     def test_lecturer_first_name_not_null(self, isolated_db):
         _must_fail(
             isolated_db,
             "INSERT INTO lecturers VALUES "
-            "('L099', NULL, 'Last', 'a@b.com', NULL, 'D001', 0, NULL)",
+            "('L099', NULL, 'Last', 'a@b.com', NULL, 'D001', 0)",
         )
 
     def test_lecturer_email_not_null(self, isolated_db):
         _must_fail(
             isolated_db,
             "INSERT INTO lecturers VALUES "
-            "('L099', 'First', 'Last', NULL, NULL, 'D001', 0, NULL)",
+            "('L099', 'First', 'Last', NULL, NULL, 'D001', 0)",
         )
 
     def test_student_email_not_null(self, isolated_db):
@@ -247,6 +249,34 @@ class TestForeignKeyConstraints:
             "('P099','Name','BSc',3,'DXXX','Details')",
         )
 
+    def test_lecturer_research_interest_invalid_lecturer_rejected(
+        self, isolated_db
+    ):
+        _must_fail(
+            isolated_db,
+            "INSERT INTO lecturer_research_interests "
+            "(lecturer_id, research_interest) "
+            "VALUES ('LXXX', 'Some interest')",
+        )
+
+    def test_department_research_area_invalid_department_rejected(
+        self, isolated_db
+    ):
+        _must_fail(
+            isolated_db,
+            "INSERT INTO department_research_areas "
+            "(department_id, research_area) "
+            "VALUES ('DXXX', 'Some area')",
+        )
+
+    def test_funding_source_invalid_project_rejected(self, isolated_db):
+        _must_fail(
+            isolated_db,
+            "INSERT INTO research_project_funding_sources "
+            "(project_id, funding_source) "
+            "VALUES ('RXXX', 'Some funder')",
+        )
+
 
 # ---------------------------------------------------------------------------
 # Column data type / default checks
@@ -317,6 +347,9 @@ class TestSeedDataCounts:
         ("student_org_memberships", 4),
         ("committees", 2),
         ("committee_memberships", 3),
+        ("lecturer_research_interests", 8),
+        ("department_research_areas", 12),
+        ("research_project_funding_sources", 5),
     ])
     def test_row_count(self, in_memory_db, table, expected):
         cursor = in_memory_db.execute(f"SELECT COUNT(*) FROM {table}")
