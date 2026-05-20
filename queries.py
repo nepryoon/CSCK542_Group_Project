@@ -71,8 +71,14 @@ def find_final_year_students_above_grade(
 
 
 def find_students_without_registration(semester: str) -> pd.DataFrame:
-    """Find students who have no enrolments for a given semester."""
-    # LEFT JOIN + IS NULL is cheaper than NOT IN / NOT EXISTS on SQLite
+    """Find students who have no enrolments for a given semester.
+
+    Uses a correlated NOT EXISTS sub-query, which expresses the anti-join
+    semantics directly: return each student for whom no matching enrolment
+    row exists in the target semester.  This is more readable than the
+    equivalent LEFT JOIN … WHERE IS NULL pattern and is the idiomatic SQL
+    choice when the intent is to assert the absence of a related row.
+    """
     query = """
         SELECT
             s.student_id,
@@ -83,10 +89,12 @@ def find_students_without_registration(semester: str) -> pd.DataFrame:
         FROM students AS s
         INNER JOIN programs AS p
             ON s.program_id = p.program_id
-        LEFT JOIN enrolments AS e
-            ON s.student_id = e.student_id
-            AND e.semester = ?
-        WHERE e.enrolment_id IS NULL
+        WHERE NOT EXISTS (
+            SELECT 1
+            FROM enrolments AS e
+            WHERE e.student_id = s.student_id
+              AND e.semester = ?
+        )
         ORDER BY student_name;
     """
     return run_query(query, (semester,))
