@@ -254,7 +254,7 @@ class TestE2EQuery10:
         data = live_client.get("/api/query/10?lecturer_id=L002").json()
         assert len(data) == 3
 
-    def test_unknown_advisor_returns_empty(self, live_client):
+    def test_unknown_advisor_returns_404(self, live_client):
         resp = live_client.get("/api/query/10?lecturer_id=L999")
         assert resp.status_code == 404
 
@@ -295,7 +295,8 @@ class TestE2EDataConsistency:
             resp = live_client.get(
                 f"/api/students/{s['student_id']}/courses"
             )
-            if resp.status_code != 200:
+            assert resp.status_code in (200, 404)
+            if resp.status_code == 404:
                 continue
             for c in resp.json():
                 grade = c.get("grade")
