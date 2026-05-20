@@ -159,7 +159,8 @@ class TestLecturersAPI:
         data = api_client.get("/api/lecturers").json()
         for record in data:
             for field in ("lecturer_id", "name", "email",
-                          "department_name", "course_load"):
+                          "department_name", "course_load",
+                          "research_interests"):
                 assert field in record
 
     def test_search_by_name(self, api_client):
@@ -377,6 +378,7 @@ class TestDepartmentsAPI:
         data = api_client.get("/api/departments").json()
         for record in data:
             for field in ("department_id", "department_name", "faculty",
+                          "research_areas",
                           "program_count", "lecturer_count", "staff_count"):
                 assert field in record
 
