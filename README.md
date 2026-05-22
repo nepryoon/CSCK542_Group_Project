@@ -126,10 +126,10 @@ The project has a full pytest test suite covering four layers:
 | Unit - database | `test_database.py` | 12 | `get_connection` and `run_query`: return types, row factory, parameterisation, error handling |
 | Unit - queries | `test_queries.py` | 68 | All 10 named query functions: correct columns, correct rows from seed data, ordering, empty-result edge cases, case-insensitive search |
 | Integration - API | `test_api.py` | 88 | Every FastAPI route and endpoint: status codes, JSON shape, search/filter parameters, 422 validation on bad input |
-| Schema integrity | `test_schema.py` | 48 | All 19 tables exist; primary-key uniqueness; NOT NULL constraints; all foreign-key relationships enforced; AUTOINCREMENT; exact seed row counts |
+| Schema integrity | `test_schema.py` | 58 | All 19 tables exist; primary-key uniqueness; NOT NULL constraints; all foreign-key relationships enforced; AUTOINCREMENT; exact seed row counts |
 | End-to-end | `test_e2e.py` | 40 | Full HTTP → SQLite → JSON chain against the real database: dashboard counts, all 10 queries with expected values, cross-entity data consistency |
 
-**Total: 256 tests, all passing.**
+**Total: 266 tests, all passing.**
 
 ### Running the tests
 
